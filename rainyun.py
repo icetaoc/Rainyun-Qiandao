@@ -357,18 +357,23 @@ def sign_in_account(user, pwd, debug=False, headless=False):
                     time.sleep(3)
 
                     try:
-                        completed = driver.find_elements(By.XPATH, "//div[contains(.,'每日签到') and .//span[contains(text(),'已完成')]]")
-                        if any(el.is_displayed() for el in completed):
-                            logger.info("今日签到已完成，跳过当前账号")
-                            try:
-                                points_raw = driver.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[3]/div[2]/div/div/div[2]/div[1]/div[1]/div/p/div/h3').get_attribute("textContent")
-                                current_points = int(''.join(re.findall(r'\d+', points_raw)))
-                            except:
-                                current_points = 0
-                            return True, user, current_points, None
+                        # 限定在“每日签到”这一行查找对应的按钮/状态，避免其它行干扰
+                        claim_btns = driver.find_elements(By.XPATH, "//span[contains(text(),'每日签到')]/following::a[contains(@href,'/account/reward/earn')][1]")
+                        if any(el.is_displayed() for el in claim_btns):
+                            logger.info("检测到‘每日签到’行的‘领取奖励’，进入签到流程")
+                        else:
+                            completed = driver.find_elements(By.XPATH, "//span[contains(text(),'每日签到')]/following::span[contains(text(),'已完成')][1]")
+                            if any(el.is_displayed() for el in completed):
+                                logger.info("‘每日签到’显示已完成，跳过当前账号")
+                                try:
+                                    points_raw = driver.find_element(By.XPATH, '//*[@id="app"]/div[1]/div[3]/div[2]/div/div/div[2]/div[1]/div[1]/div/p/div/h3').get_attribute("textContent")
+                                    current_points = int(''.join(re.findall(r'\d+', points_raw)))
+                                except:
+                                    current_points = 0
+                                return True, user, current_points, None
                     except Exception:
                         pass
-                    
+
                     strategies = [
                         (By.XPATH, '//*[@id="app"]/div[1]/div[3]/div[2]/div/div/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div[1]/div/span[2]/a'),
                         (By.XPATH, '//a[contains(@href, "earn") and contains(text(), "赚取")]'),
